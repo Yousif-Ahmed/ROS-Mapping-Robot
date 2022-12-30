@@ -1,0 +1,4 @@
+<launch>
+  <node pkg = "cr_pkg" type = "sensor_fusion.py" name = "sensor_fusion" output = "screen" />
+  
+</launch>

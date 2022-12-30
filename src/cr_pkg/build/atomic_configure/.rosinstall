@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/yousif/catkin_ws/src/cr_pkg/build/devel/setup.sh

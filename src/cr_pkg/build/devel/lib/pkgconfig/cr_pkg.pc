@@ -1,0 +1,8 @@
+prefix=/home/yousif/catkin_ws/src/cr_pkg/build/devel
+
+Name: cr_pkg
+Description: Description of cr_pkg
+Version: 0.0.0
+Cflags: -I/home/yousif/catkin_ws/src/cr_pkg/build/devel/include
+Libs: -L${prefix}/lib 
+Requires: 
