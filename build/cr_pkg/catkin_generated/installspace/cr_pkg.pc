@@ -1,8 +1,0 @@
-prefix=/home/yousif/catkin_ws/install
-
-Name: cr_pkg
-Description: Description of cr_pkg
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: 
