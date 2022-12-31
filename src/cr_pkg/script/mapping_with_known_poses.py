@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-
+import math
 import rospy
 from nav_msgs.msg import OccupancyGrid, Odometry
 from cr_pkg.msg import sensorfusion
 # from tf.transformations import translation_matrix, quaternion_matrix
 
 import numpy as np
-
+import tf
 
 # map width in meters
 MAP_WIDTH = 4992
@@ -15,34 +15,29 @@ MAP_WIDTH = 4992
 MAP_HEIGHT = 4992  
 
 # the resolution of the map (the size (length and width) of each cell in the occupancy grid in meters per cell)
-RESOLUTION = 1.0
+RESOLUTION = 0.2
 
 # the origin coordinates of the map
-MAP_ORIGIN_X = -50.0
-MAP_ORIGIN_Y = -50.0
+MAP_ORIGIN_X = 0.03 - RESOLUTION * MAP_WIDTH / 2
+MAP_ORIGIN_Y = 0.03 - RESOLUTION * MAP_HEIGHT / 2
 
 # the number of the cells in the X-axis
-CELLS_X = int(MAP_WIDTH / RESOLUTION)
+CELLS_X = MAP_WIDTH
 
 # the number of the cells in the Y-axis
-CELLS_Y = int(MAP_HEIGHT / RESOLUTION)
+CELLS_Y = MAP_HEIGHT
 
 
 class Mapper:
     def __init__(self):
-        rospy.loginfo('mapping_with_known_poses node started')
-        self.hits = np.full((CELLS_X, CELLS_Y), 0)
-        rospy.loginfo('map publisher created')
-        self.misses = np.full((CELLS_X, CELLS_Y), 0)
-        rospy.loginfo('map publisher created: misses')
+        self.hits = np.full((CELLS_X, CELLS_Y), 1)
+        self.misses = np.full((CELLS_X, CELLS_Y), 1)
         self.map_publisher = rospy.Publisher('/map_topic', OccupancyGrid)
-        rospy.loginfo('map publisher created: hits')
         self.sensors_subscriber = None
         
 
 
     def publish_map(self):
-        rospy.loginfo('publishing map')
         grid_map = (np.round_((self.hits / (self.hits + self.misses)) * 100)).astype(np.int8)
         
         msg = OccupancyGrid()
@@ -61,7 +56,6 @@ class Mapper:
     
 
     def sensor_callback(self, msg):
-        rospy.loginfo('sensor callback')
         # get the position of the sensor
         laser_data = msg.laser_scan_data
         odom_data = msg.odm_data
@@ -70,13 +64,12 @@ class Mapper:
         x_robot = odom_data.pose.pose.position.x
         y_robot = odom_data.pose.pose.position.y
 
-        robot_cell_x = int((x_robot - MAP_ORIGIN_X) / RESOLUTION)
-        robot_cell_y = int((y_robot - MAP_ORIGIN_Y) / RESOLUTION)
-
-        orientation_x = odom_data.pose.pose.orientation.x
-        orientation_y = odom_data.pose.pose.orientation.y
-        orientation_z = odom_data.pose.pose.orientation.z
-        orientation_w = odom_data.pose.pose.orientation.w
+        rospy.loginfo("x_robot = %f", x_robot)
+        rospy.loginfo("y_robot = %f", y_robot)
+    
+        orientation_z = odom_data.pose.pose.orientation
+        orientation_z = tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2]
+        rospy.loginfo("orientation_z = %f", orientation_z)
 
         angle_min = laser_data.angle_min
         angle_max = laser_data.angle_max
@@ -86,33 +79,37 @@ class Mapper:
         range_max = laser_data.range_max
         range_min = laser_data.range_min
 
-        angles = np.array([x for x in np.arange(angle_min, angle_max, angle_increment)])  - orientation_z  + np.radians(90)
-
-        x_measurement = -(x_robot + readings * np.cos(angles))
-        y_measurement = y_robot + readings * np.sin(angles)
-
         
 
         # calculate the cells that the laser hits
         for i in range(len(readings)):
-            reading = readings[i]
-            end_x = x_measurement[i]
-            end_y = y_measurement[i]
+            if readings[i] >= range_max or readings[i] <= range_min:
+                continue
+            
+            angle = angle_min + i * angle_increment + orientation_z
 
-            distance = reading / RESOLUTION
+            end_x = x_robot + readings[i] * math.cos(angle)
+            end_y = y_robot + readings[i] * math.sin(angle)
 
-            dx = (end_x - x_robot)/distance
-            dy = (end_y - y_robot)/distance
-            xs = np.arange(x_robot, end_x + dx, dx).astype(np.int)
-            ys = np.arange(y_robot, end_y + dy, dy).astype(np.int)
-            min_length = min(len(xs), len(ys))
-            xs = xs[:min_length]
-            ys = ys[:min_length]
-            self.misses[xs, ys] += 1
+            map_x = int((end_x - MAP_ORIGIN_X) / RESOLUTION)
+            map_y = int((end_y - MAP_ORIGIN_Y) / RESOLUTION)
+            if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
+                continue
 
-            hit_cell_x = int((end_x - MAP_ORIGIN_X) / RESOLUTION)
-            hit_cell_y = int((end_y - MAP_ORIGIN_Y) / RESOLUTION)
-            self.hits[hit_cell_x, hit_cell_y] += 1
+
+            self.hits[map_y, map_x] += 1
+
+            for j in range(1, int(readings[i]/RESOLUTION)):
+                x = x_robot + j * RESOLUTION * math.cos(angle)
+                y = y_robot + j * RESOLUTION * math.sin(angle)
+
+                map_x = int((x - MAP_ORIGIN_X) / RESOLUTION)
+                map_y = int((y - MAP_ORIGIN_Y) / RESOLUTION)
+
+                if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
+                    continue
+
+                self.misses[map_y, map_x] += 1
 
         # publish the map
         self.publish_map()
@@ -120,7 +117,6 @@ class Mapper:
     
 
     def run(self):
-        rospy.loginfo('running')
         rospy.Rate(10)
         self.sensors_subscriber = rospy.Subscriber('/sensor_output', sensorfusion, callback = self.sensor_callback)
         rospy.spin()
