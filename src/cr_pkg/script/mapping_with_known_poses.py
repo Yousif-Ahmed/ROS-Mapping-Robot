@@ -86,9 +86,9 @@ class Mapper:
         range_max = laser_data.range_max
         range_min = laser_data.range_min
 
-        angles = np.array([x for x in np.arange(angle_min, angle_max, angle_increment)])
+        angles = np.array([x for x in np.arange(angle_min, angle_max, angle_increment)])  - orientation_z  + np.radians(90)
 
-        x_measurement = x_robot + readings * np.cos(angles)
+        x_measurement = -(x_robot + readings * np.cos(angles))
         y_measurement = y_robot + readings * np.sin(angles)
 
         
