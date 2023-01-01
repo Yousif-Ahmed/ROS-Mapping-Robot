@@ -24,18 +24,16 @@ class SensorFusionClass:
 
     def sensor_callback(self,msg1 , msg2 ):
         msg = sensorfusion()
-        self.laser_data = msg1
-        self.odom_data = msg2
-        if self.laser_data is not None:
-                msg.laser_scan_data = self.laser_data
-        if self.odom_data is not None:
-                msg.odm_data = self.odom_data
+        msg.laser_scan_data = msg1
+        msg.odm_data = msg2
+        msg.header = rospy.Header()
+        msg.header.stamp = rospy.Time.now()
         
         self.sensor_pub.publish(msg)
 
     def run(self):
-        rate = rospy.Rate(10)
-        ts = ApproximateTimeSynchronizer((self.laser_sub, self.odom_sub), 10, 0.01, allow_headerless=True)
+        # rate = rospy.Rate(10)
+        ts = ApproximateTimeSynchronizer([self.laser_sub, self.odom_sub], 10, 0.01, allow_headerless=False)
         ts.registerCallback(self.sensor_callback)
         rospy.spin()
 

@@ -34,14 +34,14 @@ class Mapper:
         self.misses = np.full((CELLS_X, CELLS_Y), 1)
         self.map_publisher = rospy.Publisher('/map_topic', OccupancyGrid)
         self.sensors_subscriber = None
-        
-
+        self.sensors_subscriber = rospy.Subscriber('/sensor_output', sensorfusion, callback = self.sensor_callback, queue_size=100)
 
     def publish_map(self):
         grid_map = (np.round_((self.hits / (self.hits + self.misses)) * 100)).astype(np.int8)
         
         msg = OccupancyGrid()
         msg.header.frame_id = 'robot_map'
+        msg.header.stamp = rospy.Time.now()
         msg.data = grid_map.flatten().tolist()
         
         # message metadata
@@ -51,6 +51,7 @@ class Mapper:
         msg.info.origin.position.x = MAP_ORIGIN_X
         msg.info.origin.position.y = MAP_ORIGIN_Y
         
+        
         # publish the map
         self.map_publisher.publish(msg)
     
@@ -59,11 +60,11 @@ class Mapper:
         # get the position of the sensor
         laser_data = msg.laser_scan_data
         odom_data = msg.odm_data
+        rospy.loginfo(f"odom =  {msg}")
 
         # robot's pose
         x_robot = odom_data.pose.pose.position.x
         y_robot = odom_data.pose.pose.position.y
-
         rospy.loginfo("x_robot = %f", x_robot)
         rospy.loginfo("y_robot = %f", y_robot)
     
@@ -117,8 +118,7 @@ class Mapper:
     
 
     def run(self):
-        rospy.Rate(10)
-        self.sensors_subscriber = rospy.Subscriber('/sensor_output', sensorfusion, callback = self.sensor_callback)
+        # rospy.Rate(10)
         rospy.spin()
 
 
