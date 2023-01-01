@@ -131,23 +131,3 @@ if __name__ == '__main__':
     
     mapper = Mapper()
     mapper.run()
-
-
-    # translation_matrix = translation_matrix([x, y, 0])
-    # quaternion_matrix = quaternion_matrix([orientation_x, orientation_y, orientation_z, orientation_w])
-
-    # transformation_matrix = np.dot(translation_matrix, quaternion_matrix)
-
-    # angles = np.array([x for x in np.arange(angle_min, angle_max, angle_increment)])
-
-    # measurement_x = np.cos(angles) * readings
-    # measurement_y = np.sin(angles) * readings
-
-    # laser_points = np.array([measurement_x, measurement_y, np.zeros(len(measurement_x)), np.ones(len(measurement_x))])
-    
-    # result = np.dot(transformation_matrix, laser_points)
-
-    # laser_x = result[0]
-    # laser_y = result[1]
-
-# No transform from [map] to [robot_map]
