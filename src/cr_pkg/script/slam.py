@@ -75,12 +75,70 @@ class SLAM:
         rospy.loginfo("After Initialize Hits and Misses")
 
         self.map_publisher = rospy.Publisher('/map_slam', OccupancyGrid, queue_size = 1)
+        self.pose_publiser = rospy.Publisher('/pose_slam', Odometry, queue_size = 1)
 
         rospy.loginfo("After Initialize Map Publisher")
-        self.sensor_fusion_subscriber = rospy.Subscriber('/sensor_output', sensorfusion, callback = self.sensor_callback)
+        self.sensor_fusion_subscriber = rospy.Subscriber('/sensor_output', sensorfusion, callback = self.sensor_callback2)
     
 
+    def sensor_callback2(self, msg):
+        self.odom = msg.odm_data
+        self.getPoseKF()
+        self.update_laser(msg.laser_scan_data)
+
+        readings = self.ranges
+        angle_min = self.angle_min
+        angle_max = self.angle_max
+        angle_increment = self.angle_increment
+        range_min = self.range_min
+        range_max = self.range_max
+
+        # initialize the map
+        map = OccupancyGrid()
+        map.header.frame_id = "robot_map"
+        map.header.stamp = rospy.Time.now()
+        map.info.resolution = RESOLUTION
+        map.info.width = CELLS_X
+        map.info.height = CELLS_Y
         
+        x_robot = self.x
+        y_robot = self.y
+
+        self.hits = np.full((CELLS_X, CELLS_Y), 1)
+        self.misses = np.full((CELLS_X, CELLS_Y), 1)
+
+        for i in range(len(readings)):
+
+            if readings[i] >= range_max or readings[i] <= range_min:
+                continue
+            
+            r = readings[i] / 1
+            angle = angle_min + i * angle_increment +  self.theta
+            end_x = x_robot + r * math.cos(angle)
+            end_y = y_robot + r * math.sin(angle)
+
+            map_x = int((end_x - MAP_ORIGIN_X) / RESOLUTION)
+            map_y = int((end_y - MAP_ORIGIN_Y) / RESOLUTION)
+            if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
+                continue
+            
+            self.hits[map_y, map_x] += 1
+            
+            stepX = (end_x - x_robot) / r
+            stepY = (end_y - y_robot) / r
+            stepsX = np.arange(x_robot, end_x, stepX).astype(int)
+            stepsY = np.arange(y_robot, end_y, stepY).astype(int)
+            minlen = min(len(stepsX), len(stepsY))
+            
+            stepsX = stepsX[:minlen]
+            stepsY = stepsY[:minlen]
+
+            self.misses[stepsY, stepsX] += 1
+            
+        
+        self.publish_map()
+            
+    
     def sensor_callback(self, msg):
         
         self.prediction()
@@ -88,6 +146,8 @@ class SLAM:
         self.update_odom(msg.odm_data)
         self.correction()
         self.update_laser(msg.laser_scan_data)
+
+        self.pose_publiser.publish(self.odom)
         
         readings = self.ranges
         angle_min = self.angle_min
@@ -125,6 +185,32 @@ class SLAM:
         self.publish_map()
 
 
+    def getPoseKF(self):
+        # get data
+        self.time = self.odom.header.stamp.secs 
+        self.vX = self.odom.twist.twist.linear.x
+        self.vY = self.odom.twist.twist.linear.y
+        self.w = self.odom.twist.twist.angular.z
+        self.obs_x = self.odom.pose.pose.position.x
+        self.obs_y = self.odom.pose.pose.position.y
+        orientation_z = self.odom.pose.pose.orientation
+        self.obs_theta =  tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2]
+       
+        # predict state
+        dt = self.time - self.prev_time
+        self.x = self.prev_x + self.vX * dt * math.cos(self.theta)
+        self.y = self.prev_y + self.vX * dt * math.sin(self.theta)
+        self.theta = self.theta + self.w * dt
+        # correct state
+        k  = 0.8
+        self.x = self.x + k * (self.obs_x - self.x)
+        self.y = self.y + k * (self.obs_y - self.y)
+        self.theta = self.theta + k * (self.obs_theta - self.theta)
+        # update prev state
+        self.prev_time = self.time
+        self.prev_x = self.x
+        self.prev_y = self.y
+        self.prev_theta = self.theta
 
 
     def update_laser(self, msg):
@@ -145,7 +231,7 @@ class SLAM:
         #self.y = msg.pose.pose.position.y
         #orientation_z = msg.pose.pose.orientation
         #self.theta = tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2]
-        self.time = msg.header.stamp.secs + msg.header.stamp.nsecs * 1e-9
+        self.time = msg.header.stamp.secs 
         self.v = msg.twist.twist.linear.x
         self.w = msg.twist.twist.angular.z
         self.sigma_x = msg.pose.covariance[0]
@@ -178,7 +264,7 @@ class SLAM:
     
     
     def publish_map(self):
-        grid_map = (np.round_((self.hits / (self.hits + self.misses)) * 100)).astype(np.int8)
+        grid_map = ((self.hits / (self.hits + self.misses) * 100)).astype(np.int8)
         
         msg = OccupancyGrid()
         msg.header.frame_id = 'robot_map'
