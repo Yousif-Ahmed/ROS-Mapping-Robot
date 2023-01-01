@@ -12,17 +12,17 @@ from nav_msgs.msg import OccupancyGrid
 import tf
 
 # map width in meters
-MAP_WIDTH = 4992
+MAP_WIDTH = 1000
 
 # map height in meters
-MAP_HEIGHT = 4992
+MAP_HEIGHT = 1000
 
 # the resolution of the map (the size (length and width) of each cell in the occupancy grid in meters per cell)
 RESOLUTION = 0.2
 
 # the origin coordinates of the map
 MAP_ORIGIN_X = 0.03 - RESOLUTION * MAP_WIDTH / 2
-MAP_ORIGIN_Y = 0.03 - RESOLUTION * MAP_HEIGHT / 2
+MAP_ORIGIN_Y = -0.032    - RESOLUTION * MAP_HEIGHT / 2
 
 # the number of the cells in the X-axis
 CELLS_X = MAP_WIDTH
@@ -84,65 +84,9 @@ class SLAM:
             '/sensor_output', sensorfusion, callback=self.sensor_callback2)
 
     def sensor_callback2(self, msg):
-        self.odom = msg.odm_data
         self.getPoseKF()
-        self.update_laser(msg.laser_scan_data)
-
-        readings = self.ranges
-        angle_min = self.angle_min
-        angle_max = self.angle_max
-        angle_increment = self.angle_increment
-        range_min = self.range_min
-        range_max = self.range_max
-
-        # initialize the map
-        map = OccupancyGrid()
-        map.header.frame_id = "robot_map"
-        map.header.stamp = rospy.Time.now()
-        map.info.resolution = RESOLUTION
-        map.info.width = CELLS_X
-        map.info.height = CELLS_Y
-
-        x_robot = self.x
-        y_robot = self.y
-
-        self.hits = np.full((CELLS_X, CELLS_Y), 1)
-        self.misses = np.full((CELLS_X, CELLS_Y), 1)
-
-        for i in range(len(readings)):
-            if readings[i] >= range_max or readings[i] <= range_min:
-                continue
-            
-            angle = angle_min + i * angle_increment + self.theta
-
-            end_x = x_robot + readings[i] * math.cos(angle)
-            end_y = y_robot + readings[i] * math.sin(angle)
-
-            map_x = int((end_x - MAP_ORIGIN_X) / RESOLUTION)
-            map_y = int((end_y - MAP_ORIGIN_Y) / RESOLUTION)
-            if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
-                continue
-
-
-            self.hits[map_y, map_x] += 1
-
-            for j in range(1, int(readings[i]/RESOLUTION)):
-                x = x_robot + j * RESOLUTION * math.cos(angle)
-                y = y_robot + j * RESOLUTION * math.sin(angle)
-
-                map_x = int((x - MAP_ORIGIN_X) / RESOLUTION)
-                map_y = int((y - MAP_ORIGIN_Y) / RESOLUTION)
-
-                if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
-                    continue
-
-                self.misses[map_y, map_x] += 1
-        rospy.loginfo("After Update Map")
-        # publish the map
-        self.publish_map()
-            
-    
-    
+        self.update_odom(msg.odm_data)
+        self.update_laser(msg.laser_scan_data)    
 
     def getPoseKF(self):
         # get data
@@ -170,7 +114,6 @@ class SLAM:
         self.prev_x = self.x
         self.prev_y = self.y
         self.prev_theta = self.theta
-
 
     def update_laser(self, msg):
         self.laser = msg
@@ -215,22 +158,19 @@ class SLAM:
     def correction(self):
         K = 0.5
         
-        
         self.x = self.x + K * (self.odom.pose.pose.position.x - self.x)
         self.y = self.y + K * (self.odom.pose.pose.position.y - self.y)
         orientation_z = self.odom.pose.pose.orientation
         self.theta = self.theta + K * (tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2] - self.theta)
-    
-    
     
     def publish_map(self):
         grid_map = ((self.hits / (self.hits + self.misses) * 100)).astype(np.int8)
         
         msg = OccupancyGrid()
         msg.header.frame_id = 'robot_map'
+        msg.header.stamp = rospy.Time.now()
         msg.data = grid_map.flatten().tolist()
-
-        
+ 
         # message metadata
         msg.info.resolution = RESOLUTION
         msg.info.width = CELLS_X
@@ -241,7 +181,64 @@ class SLAM:
         # publish the map
         self.map_publisher.publish(msg)
 
+    def update_map(self):
+        readings = self.ranges
+        angle_min = self.angle_min
+        angle_max = self.angle_max
+        angle_increment = self.angle_increment
+        range_min = self.range_min
+        range_max = self.range_max
+
+        # initialize the map
+        map = OccupancyGrid()
+        map.header.frame_id = "robot_map"
+        map.header.stamp = rospy.Time.now()
+        map.info.resolution = RESOLUTION
+        map.info.width = CELLS_X
+        map.info.height = CELLS_Y
+
+        x_robot = self.x
+        y_robot = self.y
+
+       
+
+        for i in range(len(readings)):
+            if readings[i] >= range_max or readings[i] <= range_min:
+                continue
+            
+            angle = angle_min + i * angle_increment + self.theta
+
+            end_x = x_robot + readings[i] * math.cos(angle)
+            end_y = y_robot + readings[i] * math.sin(angle)
+
+            map_x = int((end_x - MAP_ORIGIN_X) / RESOLUTION)
+            map_y = int((end_y - MAP_ORIGIN_Y) / RESOLUTION)
+            if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
+                continue
+
+
+            self.hits[map_y, map_x] += 1
+
+            for j in range(1, int(readings[i]/RESOLUTION)):
+                x = x_robot + j * RESOLUTION * math.cos(angle)
+                y = y_robot + j * RESOLUTION * math.sin(angle)
+
+                map_x = int((x - MAP_ORIGIN_X) / RESOLUTION)
+                map_y = int((y - MAP_ORIGIN_Y) / RESOLUTION)
+
+                if map_x < 0 or map_x >= CELLS_X or map_y < 0 or map_y >= CELLS_Y:
+                    continue
+
+                self.misses[map_y, map_x] += 1
+        rospy.loginfo("After Update Map")
+        # publish the map
+        self.publish_map()
+
 if __name__ == '__main__':
     rospy.init_node('slam')
+    rate = rospy.Rate(2)
     slam = SLAM()
+    while not rospy.is_shutdown():
+        slam.update_map()
+        rate.sleep()
     rospy.spin()
