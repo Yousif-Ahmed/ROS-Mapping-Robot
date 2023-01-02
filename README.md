@@ -26,7 +26,7 @@ _common/summit_xl_control/launch/summit_xl_control.launch]
 The traceback for the exception was written to the log file
 ```
 
-Just remove lines 104 and 105 in `SUMMIT-XL/src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch`
+Just remove lines 104 and 105 in `src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch`
 
 ## Usage
 
