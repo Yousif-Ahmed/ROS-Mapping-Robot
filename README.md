@@ -26,7 +26,12 @@ _common/summit_xl_control/launch/summit_xl_control.launch]
 The traceback for the exception was written to the log file
 ```
 
-Just remove lines 104 and 105 in `src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch`
+Just remove lines 104 and 105 in `src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch` file which are:
+
+```xml
+<arg name="arm_manufacturer" value="$(arg arm_manufacturer)"/>
+<arg name="arm_model" value="$(arg arm_model)"/>
+```
 
 ## Usage
 
