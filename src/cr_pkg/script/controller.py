@@ -33,17 +33,6 @@ class Controller(threading.Thread):
 
         self.start()
 
-    def wait_for_subscribers(self):
-        i = 0
-        while not rospy.is_shutdown() and self.publisher.get_num_connections() == 0:
-            if i == 4:
-                print("Waiting for subscriber to connect to {}".format(self.publisher.name))
-            rospy.sleep(0.5)
-            i += 1
-            i = i % 5
-        if rospy.is_shutdown():
-            raise Exception("Got shutdown request before subscribers connected")
-
     def update(self, x, th, speed, turn):
         self.condition.acquire()
         self.x = x
@@ -127,7 +116,6 @@ if __name__=="__main__":
     th = 0
 
     try:
-        controller_thread.wait_for_subscribers()
         controller_thread.update(x, th, speed, turn)
 
         while(1):
