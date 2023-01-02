@@ -1,0 +1,1 @@
+roslaunch cr_pkg all.launch
