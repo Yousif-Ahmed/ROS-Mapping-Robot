@@ -12,8 +12,8 @@ from geometry_msgs.msg import Twist
 moveBindings = {
     'w':(1,0),
     'a':(0,1),
-    'd':(0,-1),
     's':(-1,0),
+    'd':(0,-1),
 }
 
 
@@ -23,8 +23,6 @@ class Controller(threading.Thread):
 
         self.publisher = rospy.Publisher('/robot/cmd_vel', Twist, queue_size = 1)
         self.x = 0.0
-        self.y = 0.0
-        self.z = 0.0
         self.th = 0.0
         self.speed = 0.0
         self.turn = 0.0
@@ -56,8 +54,8 @@ class Controller(threading.Thread):
 
             # Copy state into twist message.
             twist.linear.x = self.x * self.speed
-            twist.linear.y = self.y * self.speed
-            twist.linear.z = self.z * self.speed
+            twist.linear.y = 0
+            twist.linear.z = 0
             twist.angular.x = 0
             twist.angular.y = 0
             twist.angular.z = self.th * self.turn
@@ -111,8 +109,6 @@ if __name__=="__main__":
     controller_thread = Controller()
 
     x = 0
-    y = 0
-    z = 0
     th = 0
 
     try:
@@ -132,7 +128,7 @@ if __name__=="__main__":
                 
             else:
                 # Skip updating cmd_vel if key timeout and robot already stopped.
-                if key == '' and x == 0 and y == 0 and z == 0 and th == 0 and speed == 1.0 and turn == 1.0:
+                if key == '' and x == 0 and th == 0 and speed == 1.0 and turn == 1.0:
                     continue
                 
                 # decelerate if no key is pressed
@@ -140,16 +136,6 @@ if __name__=="__main__":
                     x = max(0, x - 0.25)
                 elif x < 0:
                     x = min(0, x + 0.25)
-                
-                if y > 0:
-                    y = max(0, y - 0.25)
-                elif y < 0:
-                    y = min(0, y + 0.25)
-                
-                if z > 0:
-                    z = max(0, z - 0.25)
-                elif z < 0:
-                    z = min(0, z + 0.25)
                 
                 if th > 0:
                     th = max(0, th - 0.25)
