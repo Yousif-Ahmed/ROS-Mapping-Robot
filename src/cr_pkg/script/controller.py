@@ -64,8 +64,6 @@ class Controller(threading.Thread):
 
         while not self.done:
             self.condition.acquire()
-            # Wait for a new message or timeout.
-            # self.condition.wait(self.timeout)
 
             # Copy state into twist message.
             twist.linear.x = self.x * self.speed

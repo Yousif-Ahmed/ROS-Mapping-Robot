@@ -123,15 +123,9 @@ class SLAM:
 
     def update_odom(self, msg):
         self.odom = msg
-        #self.x = msg.pose.pose.position.x
-        #self.y = msg.pose.pose.position.y
-        #orientation_z = msg.pose.pose.orientation
-        #self.theta = tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2]
         self.time = msg.header.stamp.secs 
         self.v = msg.twist.twist.linear.x
         self.w = msg.twist.twist.angular.z
-        # self.sigma_x = msg.pose.covariance[0]
-        # self.sigma_y = msg.pose.covariance[7]
         
         if self.prev_time != 0:
             self.prev_x = self.x
@@ -166,14 +160,6 @@ class SLAM:
         readings = self.ranges
         range_min = self.range_min
         range_max = self.range_max
-
-        # initialize the map
-        # map = OccupancyGrid()
-        # map.header.frame_id = "robot_map"
-        # map.header.stamp = rospy.Time.now()
-        # map.info.resolution = RESOLUTION
-        # map.info.width = CELLS_X
-        # map.info.height = CELLS_Y
 
         # calculate the cells that the laser hits
         for i in range(len(readings)):
@@ -245,4 +231,3 @@ if __name__ == '__main__':
         slam.run()
     except rospy.ROSInterruptException:
         pass
-    
