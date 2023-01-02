@@ -69,7 +69,7 @@ While in the project directory, run the following commands in separate terminals
         source runMapping.sh
         ```
 
-4. Launch the robot controller
+4. Launch the robot controller (Skip this step if you are used `runMapping.sh` script above)
 
     ```bash
     source runRobotController.sh
