@@ -1,7 +1,0 @@
-<launch>
-  <node pkg = "cr_pkg" type = "sensor_fusion.py" name = "sensor_fusion" output = "screen" />
-  <node pkg = "cr_pkg" type = "mapping_with_known_poses.py" name = "mapping_with_known_poses" output="screen"/>
-  
-  <!-- <node pkg = "cr_pkg" type = "slam.py" name = "slam" output="screen"/> -->
-  
-</launch>
