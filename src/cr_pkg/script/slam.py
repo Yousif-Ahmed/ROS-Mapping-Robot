@@ -94,7 +94,7 @@ class SLAM:
         # predict state
         dt = self.time - self.prev_time
         self.x = self.prev_x + self.vX * dt * math.cos(self.theta)
-        self.y = self.prev_y + self.vX * dt * math.sin(self.theta)
+        self.y = self.prev_y + self.vY * dt * math.sin(self.theta)
         self.theta = self.theta + self.w * dt
         
         # correct state
