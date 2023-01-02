@@ -63,6 +63,12 @@ While in the project directory, run the following commands in separate terminals
         source runSLAM.sh
         ```
 
+    - To run both
+
+        ```bash
+        source runMapping.sh
+        ```
+
 4. Launch the robot controller
 
     ```bash
@@ -70,3 +76,17 @@ While in the project directory, run the following commands in separate terminals
     ```
 
     You can control the robot using the keyboard (WASD)
+
+5. To see the mapping:
+
+    1. In rViz, click on the `Add` button
+
+    2. Select `By topic`
+
+    3. Select the topic `/map_topic` or `/map_slam` depending on the mapping method you used
+
+    4. Give the topic a name (e.g. `Mapping with known poses` or `Mapping with SLAM`)
+
+    5. Click on `Add`
+
+    6. You can hide/show the mapping by toggling the checkbox next to the topic name in the `Displays` tab
