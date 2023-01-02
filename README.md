@@ -21,7 +21,7 @@ This is a ROS package for controlling the SUMMIT-XL robot in Gazebo and rViz and
 
 While in the project directory, run the following commands in separate terminals:
 
-1. Launch Gazebo + rViz
+1. Launch Gazebo + rViz simulations
 
     ```bash
     source runSimulators.sh
