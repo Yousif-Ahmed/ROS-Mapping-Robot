@@ -17,22 +17,6 @@ This is a ROS package for controlling the SUMMIT-XL robot in Gazebo and rViz and
     source setupProject.sh
     ```
 
-if you faced an issue such as:
-
-```text
-RLException: unused args [arm_manufacturer, arm_model] for include of [/mnt/FC8006E780
-06A7EA/${path to project}/src/summit_xl
-_common/summit_xl_control/launch/summit_xl_control.launch]
-The traceback for the exception was written to the log file
-```
-
-Just remove lines 104 and 105 in `src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch` file which are:
-
-```xml
-<arg name="arm_manufacturer" value="$(arg arm_manufacturer)"/>
-<arg name="arm_model" value="$(arg arm_model)"/>
-```
-
 ## Usage
 
 While in the project directory, run the following commands in separate terminals:
@@ -41,6 +25,22 @@ While in the project directory, run the following commands in separate terminals
 
     ```bash
     source runSimulators.sh
+    ```
+
+    If you faced an issue such as:
+
+    ```text
+    RLException: unused args [arm_manufacturer, arm_model] for include of [/mnt/FC8006E780
+    06A7EA/${path to project}/src/summit_xl
+    _common/summit_xl_control/launch/summit_xl_control.launch]
+    The traceback for the exception was written to the log file
+    ```
+
+    Just remove lines 104 and 105 in `src/summit_xl_sim/summit_xl_gazebo/launch/summit_xl_one_robot.launch` file which are:
+
+    ```xml
+    <arg name="arm_manufacturer" value="$(arg arm_manufacturer)"/>
+    <arg name="arm_model" value="$(arg arm_model)"/>
     ```
 
 2. Launch the IRA Laser Tools
