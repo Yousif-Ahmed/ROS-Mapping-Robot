@@ -1,4 +1,4 @@
-# SUMMIT-XL Mapping Robot
+# ROS Mapping Robot
 
 This is a ROS package for controlling the SUMMIT-XL robot in Gazebo and rViz and mapping the environment using the odometry and the laser scanner data.
 
@@ -7,13 +7,13 @@ This is a ROS package for controlling the SUMMIT-XL robot in Gazebo and rViz and
 1. Clone the repository
 
     ```bash
-    git clone https://github.com/Yousif-Ahmed/summit-ml-robot.git
+    git clone https://github.com/Yousif-Ahmed/ROS-Mapping-Robot.git
     ```
 
 2. Enter the directory and run the setup script
 
     ```bash
-    cd summit-ml-robot
+    cd ROS-Mapping-Robot
     source setupProject.sh
     ```
 
