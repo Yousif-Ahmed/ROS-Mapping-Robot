@@ -134,19 +134,6 @@ class SLAM:
             self.prev_time = self.time
         else:
             self.prev_time = self.time
-    
-    def prediction(self):
-        dt = self.time - self.prev_time
-        self.x = self.x + self.v * dt * math.cos(self.theta)
-        self.y = self.y + self.v * dt * math.sin(self.theta)
-        self.theta = self.theta + self.w * dt
-    
-    def correction(self):
-        K = 0.5
-        self.x = self.x + K * (self.odom.pose.pose.position.x - self.x)
-        self.y = self.y + K * (self.odom.pose.pose.position.y - self.y)
-        orientation_z = self.odom.pose.pose.orientation
-        self.theta = self.theta + K * (tf.transformations.euler_from_quaternion([orientation_z.x, orientation_z.y, orientation_z.z, orientation_z.w])[2] - self.theta)
 
     def update_map(self):
         x_robot = self.x
